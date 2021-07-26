@@ -1,0 +1,3 @@
+---
+- name: Make base directory on server
+  hosts: server
