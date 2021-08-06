@@ -1,1 +1,48 @@
-
+---
+- name: Make base directory on server
+  hosts: localhost
+  tasks:
+    - name: Create /tmp/base_root
+      file:
+        path: /tmp/base_root
+        state: directory
+        mode: '0755'
+    - name: Downloading file from WWW
+      get_url:
+        url: https://filesamples.com/samples/document/txt/sample1.txt
+        dest: /tmp/base_root
+        mode: '0644'
+    - name: Install a list of packages with a list variable
+      yum:
+        name: "{{ packages }}"
+      when:
+        ansible_os_family == "RedHat"
+      vars:
+        packages:
+        - htop
+        - unzip
+        - telnet
+        - java
+        - python
+    - name: Install Nginx Web Server on RedHat Family
+      yum:
+        name=nginx
+        state=latest
+      when:
+        ansible_os_family == "RedHat"
+      notify:
+        - nginx systemd
+    - name: Allow http & https service in firewalld
+      shell: |
+        firewall-cmd --permanent --add-service=http
+        firewall-cmd --permanent --add-service=https
+        firewall-cmd --reload
+    - name: Chek working nginx service
+      shell: |
+        curl -Is http://{{ansible_host}} | head -1 >> /tmp/base_root/nginx_start_result.txt
+  handlers:
+    - name: nginx systemd
+      systemd:
+        name: nginx
+        enabled: yes
+        state: started
